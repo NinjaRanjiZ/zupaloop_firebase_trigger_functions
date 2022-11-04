@@ -64,3 +64,7 @@ node_modules/
 
 # dotenv environment variables file
 .env
+
+
+# to add serviceaccount details for ignore
+serviceaccountdetails.json
