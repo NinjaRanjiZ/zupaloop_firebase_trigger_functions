@@ -67,4 +67,4 @@ node_modules/
 
 
 # to add serviceaccount details for ignore
-serviceaccountdetails.json
+./functions/serviceaccountdetails.json
