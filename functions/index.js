@@ -40,7 +40,7 @@ const ADMIN_API_KEY = "0472cce5fd0f92cd6723dfbca2da7a33";
 const client = algoliasearch(APPLICATION_ID, ADMIN_API_KEY);
 
 // initialize the index with the same name as of the collection in firestore.
-const index = client.initIndex('testObjectsDetector');
+const index = client.initIndex('zupaloop');
 
 
 // Imports the Google Cloud Video Intelligence library.
@@ -93,7 +93,7 @@ function objectAnnotations(jsonBlob) {
                                 if (duration > 0.5) {
                                         // selected attributes of each object.
                                         var individualObject = {};
-                                        individualObject.entityDescription = object.entity.description;
+                                        individualObject.description = object.entity.description;
                                         individualObject.startTime = startTimeRoundOff;
                                         individualObject.endTime = endTimeRoundOff;
                                         individualObject.duration = durationRoundOff;
@@ -170,7 +170,7 @@ function transcribeVideoIntelligence(jsonBlob) {
 
                                                 // select only the required attributes from an object.
                                                 var individualObject = {};
-                                                individualObject.transcript = object.alternatives[0].transcript;
+                                                individualObject.description = object.alternatives[0].transcript;
                                                 individualObject.startTime = startTime;
                                                 individualObject.endTime = endTime;
                                                 individualObject.duration = duration;
