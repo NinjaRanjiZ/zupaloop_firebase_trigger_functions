@@ -209,7 +209,7 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
                 // video_50EAF025-1B5A-49E8-B7B3-768AE35492ED.mp4
 
                 var fileNameArray = fileName.split("_");
-                var suffix = fileNameArray[0];
+                var prefix = fileNameArray[0];
                 var basename = fileNameArray[1];
                 // 50EAF025-1B5A-49E8-B7B3-768AE35492ED.mp4
 
@@ -229,6 +229,16 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
                 var outputUri = gcsUri.replace(".mp4", ".json");
                 console.log("output uri is", outputUri);
 
+
+                // if the video type is "uploaded video", then keep 2 output json files.
+                if (prefix == "uploadFile") {
+                        var uriForOutput = gcsUri.replace(".mp4", ".json");
+                        var objectDetectionOutputUri = uriForOutput.replace("uploadFile", "uploadFileObjectDetection");
+                        var transcribeVideoOutputUri = uriForOutput.replace("uploadFile", "uploadFileTranscribeVideoDetection");
+
+                        console.log("upload file object detection", objectDetectionOutputUri);
+                        console.log("upload file transcribe video", transcribeVideoOutputUri);
+                }
 
                 // write a query to get the details of "video document" from the database if it exists.
                 var videoName = null;
@@ -253,7 +263,7 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
 
 
                 // if the content type is video, then process the video file.
-                if ((fileExtension == "mp4") && (suffix == "video")) {
+                if ((fileExtension == "mp4") && (prefix == "video")) {
                         if ((userID == "RingrK9ak2P3fplRNmhi4HyIV513") || (userID == "Vx6ATW1LZlVXDbdGAOKFLkHan012") || (userID == "d8YKI8RDbPaJAEPlYWqU4Lu4Mdy2") || (userID == "Wa5qbaXhe6Ww0CjzZRi8Tz9NNdg1")) {
 
                                 console.log("a video is uploaded");
@@ -276,7 +286,29 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
                 }
 
 
-                if ((fileExtension == "json") && (suffix == "video")) {
+                // This is for "upload video" file. Processing should be done for both audio and video.
+                if ((fileExtension == "mp4") && (prefix == "uploadFile")) {
+                        if ((userID == "RingrK9ak2P3fplRNmhi4HyIV513") || (userID == "Vx6ATW1LZlVXDbdGAOKFLkHan012") || (userID == "d8YKI8RDbPaJAEPlYWqU4Lu4Mdy2") || (userID == "Wa5qbaXhe6Ww0CjzZRi8Tz9NNdg1")) {
+
+                                console.log("an upload video is uploaded");
+
+                                const request = {
+                                        inputUri: gcsUri,
+                                        outputUri: objectDetectionOutputUri,
+                                        features: ['OBJECT_TRACKING']
+                                };
+
+                                console.log("Starting the annotation process");
+                                const [operation] = await videoclient.annotateVideo(request);
+                                console.log("Processing done");
+
+                        }
+
+                }
+
+
+
+                if ((fileExtension == "json") && ((prefix == "video") || (prefix == "uploadFileObjectDetection"))) {
 
                         // "os.tmpdir()" method of the os module is used to get path of default directory for temporary files of the operating system.
                         const tempFilePath = path.join(os.tmpdir(), fileName);
@@ -326,7 +358,7 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
 
 
                 // if the content is audio, then execute the following.
-                if ((fileExtension == "mp4") && ((suffix == "audio") || (suffix == "systemAudio"))) {
+                if ((fileExtension == "mp4") && ((prefix == "audio") || (prefix == "systemAudio"))) {
                         if ((userID == "RingrK9ak2P3fplRNmhi4HyIV513") || (userID == "Vx6ATW1LZlVXDbdGAOKFLkHan012") || (userID == "d8YKI8RDbPaJAEPlYWqU4Lu4Mdy2")|| (userID == "Wa5qbaXhe6Ww0CjzZRi8Tz9NNdg1")) {
 
                                 console.log("an audio file is uploaded");
@@ -354,7 +386,34 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
                 }
 
 
-                if ((fileExtension == "json") && ((suffix == "audio") || (suffix == "systemAudio"))) {
+                // for uploaded video file.
+                if ((fileExtension == "mp4") && (prefix == "uploadFile")) {
+                        if ((userID == "RingrK9ak2P3fplRNmhi4HyIV513") || (userID == "Vx6ATW1LZlVXDbdGAOKFLkHan012") || (userID == "d8YKI8RDbPaJAEPlYWqU4Lu4Mdy2")|| (userID == "Wa5qbaXhe6Ww0CjzZRi8Tz9NNdg1")) {
+
+                                const videoContext = {
+                                        speechTranscriptionConfig: {
+                                        languageCode: 'en-US',
+                                        enableAutomaticPunctuation: true,
+                                        },
+                                };
+
+                                const request = {
+                                        inputUri: gcsUri,
+                                        outputUri: transcribeVideoOutputUri,
+                                        features: ['SPEECH_TRANSCRIPTION'],
+                                        videoContext: videoContext,
+                                };
+
+                                console.log("Starting the annotation process");
+                                const [operation] = await videoclient.annotateVideo(request);
+                                console.log("Processing done");
+
+                        }
+                        
+                }
+
+
+                if ((fileExtension == "json") && ((prefix == "audio") || (prefix == "systemAudio") || (prefix == "uploadFileTranscribeVideoDetection"))) {
 
                 // "os.tmpdir()" method of the os module is used to get path of default directory for temporary files of the operating system.
                 const tempFilePath = path.join(os.tmpdir(), fileName);
@@ -396,5 +455,6 @@ exports.firebaseStorageOnWrite = functions.storage.object().onFinalize(async (ob
                                 console.log(err);
                         }
                 })};
+
         }
 });
